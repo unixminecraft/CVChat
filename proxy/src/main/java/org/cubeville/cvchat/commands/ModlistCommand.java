@@ -34,7 +34,12 @@ public class ModlistCommand extends CommandBase
             if(RankManager.getInstance().getPriority(player) >= 20) {
                 if(args.length == 0 || player.getDisplayName().toUpperCase().indexOf(args[0].toUpperCase()) >= 0) {
                     boolean vis = !Util.playerIsHidden(player);
-                    boolean hvis = (isPlayerEqual(sender, player) || (sender.hasPermission("cvchat.showvanished")));
+                    boolean hvis = true;
+                    if(sender instanceof ProxiedPlayer) {
+                        ProxiedPlayer senderPlayer = (ProxiedPlayer) sender;
+                        boolean outranks = getPDM().outranksOrEqual(senderPlayer.getUniqueId(), player.getUniqueId());
+                        hvis = isPlayerEqual(senderPlayer, player) || outranks;
+                    }
                     if(vis || hvis) {
                         if(list.length() > 0) list += "§r, ";
                         list += "§" + RankManager.getInstance().getColor(player);
