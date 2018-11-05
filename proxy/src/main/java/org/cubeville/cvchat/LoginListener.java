@@ -3,6 +3,8 @@ package org.cubeville.cvchat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import net.md_5.bungee.api.ProxyServer;
@@ -27,10 +29,13 @@ public class LoginListener implements Listener
 {
     ChannelManager channelManager;
     TicketManager ticketManager;
+
+    Map<UUID, Long> newPlayerLogins;
     
     public LoginListener(ChannelManager channelManager, TicketManager ticketManager) {
         this.channelManager = channelManager;
         this.ticketManager = ticketManager;
+        newPlayerLogins = new HashMap<>();
     }
 
     @EventHandler
@@ -55,22 +60,47 @@ public class LoginListener implements Listener
         }
     }
 
+    private int newPlayerLoginCount(int Time) {
+        int ret = 0;
+        long currentTime = System.currentTimeMillis();
+        for(UUID p: newPlayerLogins.keySet()) {
+            long tdiff = currentTime - newPlayerLogins.get(p);
+            if(tdiff > Time) ret++;
+        }
+        return ret;
+    }
+    
     @EventHandler
-    public void onLogin(final LoginEvent event) {        
+    public void onLogin(final LoginEvent event) {
         PlayerDataManager pdm = PlayerDataManager.getInstance();
         PendingConnection connection = event.getConnection();
-        if(pdm.isBanned(connection.getUniqueId(), true)) {
+        UUID uuid = connection.getUniqueId();
+
+        if(!pdm.isPlayerKnown(uuid)) {
+            // Count number of new players in last two minutes
+            int c2min = newPlayerLoginCount(120000);
+            int c10min = newPlayerLoginCount(600000);
+            System.out.println("New player " + uuid + " logging in. 2 min cnt = " + c2min + ", 10 min cnt = " + c10min);
+            if(c2min >= 4 || c10min >= 8) {
+                event.setCancelled(true);
+                event.setCancelReason("§cSorry, all login slots are currently occupied.\n§cPlease try again in a few minutes.");
+                System.out.println("Login denied for player " + uuid + ", 2 minute login count: " + c2min + ", 10 minute count: " + c10min);
+                return;
+            }
+            System.out.println("Access granted at " + System.currentTimeMillis() + ".");
+        }
+
+        if(pdm.isBanned(uuid, true)) {
             event.setCancelled(true);
             boolean perm = pdm.isPermanentlyBanned(connection.getUniqueId());
             String type = perm ? "permanently" : "temporarily";
             String endOfBan = "";
             if(!perm) {
                 SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss z");
-                endOfBan = " until §e" + sdf.format(new Date(pdm.getEndOfTempban(connection.getUniqueId())));
+                endOfBan = " until §e" + sdf.format(new Date(pdm.getEndOfTempban(uuid)));
             }
-            event.setCancelReason("§cYou're " + type + " banned from this server" + endOfBan + ".\n§cReason: §e" + pdm.getBanReason(connection.getUniqueId()));
+            event.setCancelReason("§cYou're " + type + " banned from this server" + endOfBan + ".\n§cReason: §e" + pdm.getBanReason(uuid));
         }
-
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -89,6 +119,7 @@ public class LoginListener implements Listener
                 sendWelcomeMessage(player.getName());
                 pdm.addPlayer(playerId, player.getName(), getStrippedIpAddress(player));
                 sendMessage(player.getDisplayName(), "joined");
+                newPlayerLogins.put(playerId, System.currentTimeMillis());
             }
             else {
                 if(pdm.getPlayerName(playerId).equals(player.getName())) {

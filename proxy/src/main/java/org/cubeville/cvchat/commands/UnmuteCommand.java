@@ -49,6 +49,8 @@ public class UnmuteCommand extends CommandBase
         for(ProxiedPlayer n: Util.getPlayersWithPermission("cvchat.mute.notify")) {
             n.sendMessage("§a" + player.getDisplayName() + "§a has been unmuted by " + sender.getDisplayName() + "§a.");
         }
+
+        sender.sendMessage("§cPlease consider making a /note if you think this mute would justify one.");
     }
 
     private SanctionManager getSanctionManager() {

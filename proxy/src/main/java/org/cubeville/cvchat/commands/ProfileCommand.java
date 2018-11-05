@@ -93,7 +93,7 @@ public class ProfileCommand extends CommandBase
             }
             lastOnline += "§r (" + dateFormat.format(new Date(lastOnlineTime)) + ")";
         }
-        sender.sendMessage("§4- §rLast on: " + lastOnline);
+        final String lastOnlineMessage = "§4- §rLast on: " + lastOnline;
         // TODO: current location
         ProxyServer.getInstance().getScheduler().runAsync(plugin, new Runnable() {
                 public void run() {
@@ -102,6 +102,7 @@ public class ProfileCommand extends CommandBase
                         String txt = "§c" + dateFormat.format(new Date(entry.getCommentTime())) + "§r " + entry.getComment() + " [" + getPDM().getPlayerName(entry.getAuthor()) + "]";
                         sender.sendMessage(txt);
                     }
+                    sender.sendMessage(lastOnlineMessage);
                 }
             });
     }
