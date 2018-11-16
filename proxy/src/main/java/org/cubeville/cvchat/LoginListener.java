@@ -65,7 +65,7 @@ public class LoginListener implements Listener
         long currentTime = System.currentTimeMillis();
         for(UUID p: newPlayerLogins.keySet()) {
             long tdiff = currentTime - newPlayerLogins.get(p);
-            if(tdiff > Time) ret++;
+            if(tdiff < Time) ret++;
         }
         return ret;
     }

@@ -1,5 +1,6 @@
 package org.cubeville.cvchat;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -26,11 +27,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.Vector;
+
+import de.myzelyam.api.vanish.VanishAPI;
 
 import org.cubeville.cvipc.CVIPC;
 import org.cubeville.cvipc.IPCInterface;
@@ -168,6 +172,7 @@ public class CVChat extends JavaPlugin implements Listener, IPCInterface
             }
             message = message.substring(idx + 1);
             String greyMessage = "§7" + removeColorCodes(message);
+            String darkGreyMessage = "§8" + removeColorCodes(message);
             
             Player player = getServer().getPlayer(playerId);
             if(player == null) return;
@@ -175,20 +180,38 @@ public class CVChat extends JavaPlugin implements Listener, IPCInterface
             
             Collection<Player> players = (Collection<Player>) getServer().getOnlinePlayers();
             int recipientCount = 0;
+            List<Player> vanishedClosePlayers = new ArrayList<>();
             for(Player p: players) {
-                Location pl = p.getLocation();
-                if(pl.getWorld().getUID().equals(loc.getWorld().getUID()) && pl.distance(loc) < 55) {
-                    p.sendMessage(message);
-                    recipientCount++;
+                if(!p.getUniqueId().equals(player.getUniqueId())) {
+                    Location pl = p.getLocation();
+                    if(pl.getWorld().getUID().equals(loc.getWorld().getUID()) && pl.distance(loc) < 55) {
+                        if(isVanished(p)) {
+                            vanishedClosePlayers.add(p);
+                        }
+                        else {
+                            p.sendMessage(message);
+                            recipientCount++;
+                        }
+                    }
                 }
             }
+
+            player.sendMessage(recipientCount == 0 ? darkGreyMessage : message);
+
+            for(Player p: vanishedClosePlayers) {
+                System.out.println("Recipients for vanished close player " + p.getDisplayName() + ": " + recipientCount);
+                String m = message;
+                if(recipientCount == 0) m += " §4*";
+                p.sendMessage(m);
+            }
+            
             for(Player p: players) {
                 Location pl = p.getLocation();
                 boolean sameworld = pl.getWorld().getUID().equals(loc.getWorld().getUID());
                 if(sameworld == false || pl.distance(loc) >= 55) {
                     if(p.hasPermission("cvchat.monitor.local") && false == mutedIds.contains(p.getUniqueId())) {
                         String m = greyMessage;
-                        if(recipientCount <= 1) m += " §4*";
+                        if(recipientCount == 0) m += " §4*";
                         p.sendMessage(m);
                     }
                 }
@@ -218,6 +241,10 @@ public class CVChat extends JavaPlugin implements Listener, IPCInterface
         return ret;
     }
 
+    private boolean isVanished(Player player) {
+        return VanishAPI.isInvisible(player);
+    }
+    
     private void fusRoDah(Player dragonBorn, int level) {
         System.out.println("Fus ro level " + level);
         final double fusHoriStrength[] = {.5,2,7};

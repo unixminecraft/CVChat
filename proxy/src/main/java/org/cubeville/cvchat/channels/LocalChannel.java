@@ -32,7 +32,7 @@ public class LocalChannel extends Channel
         for(ProxiedPlayer p: allPlayers) {
             if(p.hasPermission("cvchat.monitor.local")) {
                 if(!p.getServer().getInfo().getName().equals(serverName)) {
-                    if(!localMuted.contains(p.getUniqueId())) p.sendMessage(greyMessage);
+                    if(!localMuted.contains(p.getUniqueId())) p.sendMessage(greyMessage + " §e*");
                 }
                 else {
                     if(localMuted.contains(p.getUniqueId())) {
